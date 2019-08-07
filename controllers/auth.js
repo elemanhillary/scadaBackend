@@ -9,13 +9,14 @@ export const signup = async (req, res) => {
   const { error } = validateForm(req.body);
   if (error) {
     return res.status(400).json({
-      error: error.details[0].message,
+      error: 'username or password format wrong include a lowercase character and a number',
     });
   }
   const password = Auth.hashPassword(req.body.password);
   const transaction = await sequelize.transaction();
   try {
     const user = await users.create({ username, password }, { transaction });
+    console.log(user);
     await transaction.commit();
     if (user) {
       return res.status(201).json({
@@ -32,17 +33,16 @@ export const signup = async (req, res) => {
 };
 
 export const signin = async (req, res) => {
-  const { error } = validateForm(req.body);
-  if (error) {
-    return res.status(400).json({
-      error: error.details[0].message,
-    });
-  }
   const { username, password } = req.body;
   try {
     const user = await users.findOne({
       where: { username },
     });
+    if (!user) {
+      res.status(404).json({
+        error: 'username doesnot exist',
+      });
+    }
     const bool = Auth.comparePassword(password, user.password);
     if (bool) {
       const token = Auth.generateToken(username);

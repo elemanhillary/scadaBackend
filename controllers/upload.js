@@ -1,27 +1,44 @@
-import fs from 'fs';
-import FormData from 'form-data';
-import fetch from 'node-fetch';
 import dotenv from 'dotenv';
+import request from 'request';
+import debug from 'debug';
 
 dotenv.config();
 export const upload = async (req, res) => {
+  debug.log(req);
   try {
-    if (!req.file) {
+    if (req.file === undefined) {
       return res.status(400).json({
-        message: 'No file uploaded',
+        error: req.file,
       });
     }
-    const body = new FormData();
-    const { path } = req.file;
-    const bs = fs.readFileSync(path, { encoding: 'base64' });
-    body.append('image', bs);
-    const imgbb = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`, {
-      method: 'POST',
-      headers: body.getHeaders(),
-      body,
+    const subscriptionKey = process.env.MS_APIKEY;
+    const uriBase = 'https://westcentralus.api.cognitive.microsoft.com/vision/v2.1/analyze';
+    const imageUrl = req.file.secure_url;
+    const params = {
+      visualFeatures: 'Categories,Description,Color',
+      details: '',
+      language: 'en',
+    };
+
+    const options = {
+      uri: uriBase,
+      qs: params,
+      body: '{"url": ' + '"' + imageUrl + '"}',
+      headers: {
+        'Content-Type': 'application/json',
+        'Ocp-Apim-Subscription-Key': subscriptionKey,
+      },
+    };
+    request.post(options, (error, response, body) => {
+      if (error) {
+        res.status(404).status({ error });
+      }
+      const jsonResponse = JSON.parse(body);
+      return res.status(200).json({
+        caption: jsonResponse.description.captions[0].text,
+        image: imageUrl,
+      });
     });
-    console.log(imgbb.url);
-    await fs.unlinkSync(path);
   } catch (error) {
     return res.status(500).json({
       error: 'something went wrong',

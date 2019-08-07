@@ -7,18 +7,19 @@ const { tokens } = db;
 
 export const checkToken = (req, res, next) => {
   const token = req.headers.authorization.startsWith('Bearer') ? req.headers.authorization.split(' ')[1] : req.headers.authorization;
-  if (token) {
-    jwt.verify(token, process.env.SECRET, (error, decoded) => {
-      if (error) {
-        return res.status(401).json({
-          error: 'unauthorized',
-        });
-      }
-      req.decoded = decoded;
-      next();
-    });
-  } else {
-    return res.status(401).json({ error: 'unauthorized' });
+  switch (token) {
+    case token === undefined:
+      return res.status(401).json({ error: 'unauthorized' });
+    case token !== undefined:
+      jwt.verify(token, process.env.SECRET, (error, decoded) => {
+        if (error) {
+          return res.status(401).json({
+            error: 'unauthorized',
+          });
+        }
+        req.decoded = decoded;
+        next();
+      });
   }
 };
 

@@ -1,9 +1,7 @@
 import express from 'express';
-import multer from 'multer';
 import { upload } from '../controllers/upload';
-import { checkToken, checkStatus } from '../middlewares/checkToken';
+import uploadimage from '../middlewares/uploadImage';
 
-const uploads = multer({ dest: './uploads' }).single('image');
 const router = express.Router();
-router.post('/upload', checkToken, checkStatus, uploads, upload);
+router.post('/upload', uploadimage, upload);
 export default router;
